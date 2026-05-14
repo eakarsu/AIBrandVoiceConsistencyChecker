@@ -1,0 +1,104 @@
+{
+  "project": "AIBrandVoiceConsistencyChecker",
+  "marker": "// === Batch 01 Gaps & Frontend Mounts ===",
+  "features": [
+    {
+      "slug": "agentic-brand-cop-reviewing-all-outgoing-content-w",
+      "component": "AgenticBrandCopReviewingAllOutgoingContentWPage",
+      "label": "Agentic brand-cop reviewing all outgoing content with explainable scores",
+      "endpoint": "/api/cf-agentic-brand-cop-reviewing-all-outgoing-content-w",
+      "kind": "cfs"
+    },
+    {
+      "slug": "rag-over-the-brand-s-style-guide-for-inline-guidan",
+      "component": "RagOverTheBrandSStyleGuideForInlineGuidanPage",
+      "label": "RAG over the brand's style guide for inline guidance in editor plugins",
+      "endpoint": "/api/cf-rag-over-the-brand-s-style-guide-for-inline-guidan",
+      "kind": "cfs"
+    },
+    {
+      "slug": "real-time-voice-drift-alerts-streamed-from-social-",
+      "component": "RealTimeVoiceDriftAlertsStreamedFromSocialPage",
+      "label": "Real-time voice-drift alerts streamed from social/CMS publish events",
+      "endpoint": "/api/cf-real-time-voice-drift-alerts-streamed-from-social-",
+      "kind": "cfs"
+    },
+    {
+      "slug": "white-label-deployment-for-agencies-servicing-mult",
+      "component": "WhiteLabelDeploymentForAgenciesServicingMultPage",
+      "label": "White-label deployment for agencies servicing multiple brand clients",
+      "endpoint": "/api/cf-white-label-deployment-for-agencies-servicing-mult",
+      "kind": "cfs"
+    },
+    {
+      "slug": "no-image-logo-style-consistency-scoring-vision",
+      "component": "NoImageLogoStyleConsistencyScoringVisionPage",
+      "label": "No image/logo style consistency scoring (vision)",
+      "endpoint": "/api/gap-no-image-logo-style-consistency-scoring-vision",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-ai-auto-rewrite-suggestions-inline-in-cms",
+      "component": "NoAiAutoRewriteSuggestionsInlineInCmsPage",
+      "label": "No AI auto-rewrite suggestions inline in CMS",
+      "endpoint": "/api/gap-no-ai-auto-rewrite-suggestions-inline-in-cms",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-real-time-voice-scoring-on-live-drafts-streamin",
+      "component": "NoRealTimeVoiceScoringOnLiveDraftsStreaminPage",
+      "label": "No real-time voice scoring on live drafts (streaming)",
+      "endpoint": "/api/gap-no-real-time-voice-scoring-on-live-drafts-streamin",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-ai-brand-asset-compliance-for-video-podcast-tra",
+      "component": "NoAiBrandAssetComplianceForVideoPodcastTraPage",
+      "label": "No AI brand-asset compliance for video/podcast transcripts",
+      "endpoint": "/api/gap-no-ai-brand-asset-compliance-for-video-podcast-tra",
+      "kind": "gap"
+    },
+    {
+      "slug": "only-5-frontend-pages-workflow-ux-is-shallow-vs-22",
+      "component": "Only5FrontendPagesWorkflowUxIsShallowVs22Page",
+      "label": "Only 5 frontend pages \u2014 workflow UX is shallow vs. 22 backend routes",
+      "endpoint": "/api/gap-only-5-frontend-pages-workflow-ux-is-shallow-vs-22",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-cms-integrations-wordpress-contentful-webflow",
+      "component": "NoCmsIntegrationsWordpressContentfulWebflowPage",
+      "label": "No CMS integrations (WordPress, Contentful, Webflow)",
+      "endpoint": "/api/gap-no-cms-integrations-wordpress-contentful-webflow",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-slack-teams-approval-routing",
+      "component": "NoSlackTeamsApprovalRoutingPage",
+      "label": "No Slack/Teams approval routing",
+      "endpoint": "/api/gap-no-slack-teams-approval-routing",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-notification-system-for-drift-alerts",
+      "component": "NoNotificationSystemForDriftAlertsPage",
+      "label": "No notification system for drift alerts",
+      "endpoint": "/api/gap-no-notification-system-for-drift-alerts",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-bulk-content-import-or-scheduled-scans",
+      "component": "NoBulkContentImportOrScheduledScansPage",
+      "label": "No bulk-content import or scheduled scans",
+      "endpoint": "/api/gap-no-bulk-content-import-or-scheduled-scans",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-browser-extension-editor-plugin",
+      "component": "NoBrowserExtensionEditorPluginPage",
+      "label": "No browser extension / editor plugin",
+      "endpoint": "/api/gap-no-browser-extension-editor-plugin",
+      "kind": "gap"
+    }
+  ]
+}

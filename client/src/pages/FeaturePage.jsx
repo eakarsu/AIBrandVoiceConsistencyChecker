@@ -21,12 +21,22 @@ export default function FeaturePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const limit = 20;
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (pageNum = 1) => {
     try {
       setLoading(true);
-      const res = await axios.get(config.apiPath);
-      setItems(res.data);
+      const res = await axios.get(`${config.apiPath}?page=${pageNum}&limit=${limit}`);
+      // Support both legacy array shape and new {data, pagination} shape
+      if (Array.isArray(res.data)) {
+        setItems(res.data);
+        setPagination(null);
+      } else {
+        setItems(res.data?.data || []);
+        setPagination(res.data?.pagination || null);
+      }
     } catch (err) {
       setError('Failed to load items');
     } finally {
@@ -35,9 +45,20 @@ export default function FeaturePage() {
   }, [config.apiPath]);
 
   useEffect(() => {
-    fetchItems();
-    axios.get('/api/brand-profiles').then(res => setBrandProfiles(res.data)).catch(() => {});
+    setPage(1);
+    fetchItems(1);
+    // Load brand profiles — handle both array and {data} shapes
+    axios.get('/api/brand-profiles?limit=100').then(res => {
+      const profiles = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      setBrandProfiles(profiles);
+    }).catch(() => {});
   }, [fetchItems]);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    fetchItems(newPage);
+    setSelectedItem(null);
+  };
 
   if (!config) return <div>Feature not found</div>;
 
@@ -89,7 +110,7 @@ export default function FeaturePage() {
       setShowForm(false);
       setFormData({});
       setEditItem(null);
-      await fetchItems();
+      await fetchItems(page);
     } catch (err) {
       setError(err.response?.data?.error || 'Operation failed');
     } finally {
@@ -102,7 +123,7 @@ export default function FeaturePage() {
     try {
       await axios.delete(`${config.apiPath}/${id}`);
       setSelectedItem(null);
-      await fetchItems();
+      await fetchItems(page);
     } catch (err) {
       setError('Delete failed');
     }
@@ -327,6 +348,49 @@ export default function FeaturePage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {pagination && pagination.totalPages > 1 && (
+          <div style={styles.paginationRow}>
+            <button
+              style={{ ...styles.pageBtn, opacity: page <= 1 ? 0.4 : 1 }}
+              disabled={page <= 1}
+              onClick={() => handlePageChange(page - 1)}
+            >
+              Prev
+            </button>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 2)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === '...'
+                  ? <span key={`ellipsis-${i}`} style={{ color: '#475569', padding: '0 4px' }}>…</span>
+                  : (
+                    <button
+                      key={p}
+                      style={{ ...styles.pageBtn, ...(p === page ? styles.pageBtnActive : {}) }}
+                      onClick={() => handlePageChange(p)}
+                    >
+                      {p}
+                    </button>
+                  )
+              )}
+            <button
+              style={{ ...styles.pageBtn, opacity: page >= pagination.totalPages ? 0.4 : 1 }}
+              disabled={page >= pagination.totalPages}
+              onClick={() => handlePageChange(page + 1)}
+            >
+              Next
+            </button>
+            <span style={{ color: '#64748b', fontSize: '12px', marginLeft: '8px' }}>
+              {pagination.total} total
+            </span>
           </div>
         )}
       </div>
@@ -1009,6 +1073,32 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  paginationRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '16px',
+    borderTop: '1px solid rgba(71, 85, 105, 0.2)',
+    flexWrap: 'wrap',
+  },
+  pageBtn: {
+    background: 'rgba(30, 41, 59, 0.8)',
+    border: '1px solid rgba(71, 85, 105, 0.4)',
+    borderRadius: '8px',
+    padding: '6px 12px',
+    color: '#94a3b8',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 0.15s',
+  },
+  pageBtnActive: {
+    background: 'rgba(99, 102, 241, 0.2)',
+    borderColor: 'rgba(99, 102, 241, 0.5)',
+    color: '#818cf8',
   },
   submitFormBtn: {
     display: 'flex',

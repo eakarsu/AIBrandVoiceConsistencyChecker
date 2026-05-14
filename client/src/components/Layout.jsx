@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, LogOut, Home, ChevronRight } from 'lucide-react';
+import { Shield, LogOut, Home, ChevronRight, Bell } from 'lucide-react';
 import { featureConfig } from '../featureConfig';
 
 export default function Layout({ children }) {
@@ -29,6 +29,9 @@ export default function Layout({ children }) {
           )}
         </div>
         <div style={styles.headerRight}>
+          <button onClick={() => navigate('/webhooks')} style={{ ...styles.logoutBtn, background: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }} title="Webhooks">
+            <Bell size={18} />
+          </button>
           <div style={styles.userInfo}>
             <div style={styles.avatar}>{user?.name?.charAt(0) || 'U'}</div>
             <div>

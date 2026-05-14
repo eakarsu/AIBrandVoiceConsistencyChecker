@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import FeaturePage from './pages/FeaturePage';
+import AIToolPage from './pages/AIToolPage';
+import Webhooks from './pages/Webhooks';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }) {
@@ -17,6 +19,8 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/feature/:featureKey" element={<ProtectedRoute><Layout><FeaturePage /></Layout></ProtectedRoute>} />
+      <Route path="/ai/:toolKey" element={<ProtectedRoute><Layout><AIToolPage /></Layout></ProtectedRoute>} />
+      <Route path="/webhooks" element={<ProtectedRoute><Layout><Webhooks /></Layout></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

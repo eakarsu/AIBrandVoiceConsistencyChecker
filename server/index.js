@@ -83,6 +83,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/webhooks', require('./routes/webhooks'));
 app.use('/api/extras', require('./routes/extras'));
+app.use('/api/claim-substantiation', require('./routes/claimSubstantiation'));
 
 // Health check
 app.get('/api/health', (req, res) => {

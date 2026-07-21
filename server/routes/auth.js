@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const rateLimit = require('express-rate-limit');
+const authenticate = require('../middleware/auth');
 const router = express.Router();
 
 // Stricter rate limit for auth routes (brute-force protection)
@@ -31,19 +32,41 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role },
+      { id: user.id, email: user.email, name: user.name, role: user.role, tenantId: user.tenant_id },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, tenantId: user.tenant_id } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+router.get('/me', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, email, name, role, tenant_id FROM users WHERE id = $1 AND tenant_id = $2',
+      [req.user.id, req.user.tenantId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
+    const user = result.rows[0];
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        tenantId: user.tenant_id,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/register', authLimiter, async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'name, email, and password are required' });
     if (typeof email !== 'string' || !email.includes('@')) return res.status(400).json({ error: 'invalid email format' });
     if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ error: 'password must be at least 8 characters' });
@@ -51,12 +74,14 @@ router.post('/register', authLimiter, async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-      [name.trim(), email.toLowerCase().trim(), hashedPassword, role || 'viewer']
+      "INSERT INTO users (name, email, password_hash, role, tenant_id) VALUES ($1, $2, $3, 'viewer', 'pending') RETURNING id, name, email, role, tenant_id",
+      [name.trim(), email.toLowerCase().trim(), hashedPassword]
     );
     const user = result.rows[0];
+    user.tenant_id = `user:${user.id}`;
+    await pool.query('UPDATE users SET tenant_id=$1 WHERE id=$2', [user.tenant_id, user.id]);
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role },
+      { id: user.id, email: user.email, name: user.name, role: user.role, tenantId: user.tenant_id },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );

@@ -5,8 +5,8 @@ const compression = (() => { try { return require('compression'); } catch (_) { 
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const pool = require('./db');
-const { ensureAIResultsTable } = require('./lib/aiHelpers');
+
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET must contain at least 32 characters');
 
 const app = express();
 
@@ -57,9 +57,6 @@ const aiRateLimiter = rateLimit({
 app.locals.aiRateLimit = aiRateLimiter;
 app.locals.aiRateLimiter = aiRateLimiter;
 
-// Initialize ai_results table
-ensureAIResultsTable(pool).catch(e => console.warn('ai_results init failed:', e.message));
-
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/brand-profiles', require('./routes/brandProfiles'));
@@ -84,6 +81,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/webhooks', require('./routes/webhooks'));
 app.use('/api/extras', require('./routes/extras'));
 app.use('/api/claim-substantiation', require('./routes/claimSubstantiation'));
+app.use('/api/publishing-workflows', require('./routes/publishingWorkflows'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -102,16 +100,3 @@ app.use('/api/agency-white-label', require('./routes/agencyWhiteLabel')); // app
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-// === Batch 01 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-image-logo-style-consistency-scoring-vision', require('./routes/gap_no_image_logo_style_consistency_scoring_vision'));
-app.use('/api/gap-no-ai-auto-rewrite-suggestions-inline-in-cms', require('./routes/gap_no_ai_auto_rewrite_suggestions_inline_in_cms'));
-app.use('/api/gap-no-real-time-voice-scoring-on-live-drafts-streamin', require('./routes/gap_no_real_time_voice_scoring_on_live_drafts_streamin'));
-app.use('/api/gap-no-ai-brand-asset-compliance-for-video-podcast-tra', require('./routes/gap_no_ai_brand_asset_compliance_for_video_podcast_tra'));
-app.use('/api/gap-only-5-frontend-pages-workflow-ux-is-shallow-vs-22', require('./routes/gap_only_5_frontend_pages_workflow_ux_is_shallow_vs_22'));
-app.use('/api/gap-no-cms-integrations-wordpress-contentful-webflow', require('./routes/gap_no_cms_integrations_wordpress_contentful_webflow'));
-app.use('/api/gap-no-slack-teams-approval-routing', require('./routes/gap_no_slack_teams_approval_routing'));
-app.use('/api/gap-no-notification-system-for-drift-alerts', require('./routes/gap_no_notification_system_for_drift_alerts'));
-app.use('/api/gap-no-bulk-content-import-or-scheduled-scans', require('./routes/gap_no_bulk_content_import_or_scheduled_scans'));
-app.use('/api/gap-no-browser-extension-editor-plugin', require('./routes/gap_no_browser_extension_editor_plugin'));

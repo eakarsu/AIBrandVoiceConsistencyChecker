@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = (() => { try { return require('compression'); } catch (_) { return null; } })();
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 require('dotenv').config();
 
 
@@ -37,7 +38,7 @@ app.use(express.json({ limit: '10mb' }));
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   message: { error: 'Too many requests. Limit: 100 per 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -49,7 +50,7 @@ app.use('/api', generalLimiter);
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   message: { error: 'Too many AI requests. Limit: 20 per hour.' },
   standardHeaders: true,
   legacyHeaders: false,

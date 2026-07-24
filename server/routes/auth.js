@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const authenticate = require('../middleware/auth');
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
   message: { error: 'Too many auth attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,

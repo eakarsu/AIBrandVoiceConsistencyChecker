@@ -3,13 +3,14 @@ const pool = require('../db');
 const auth = require('../middleware/auth');
 const { callOpenRouter, parseAIJson, parseLabeledFields, saveAIResult, DEFAULT_MODEL } = require('../lib/aiHelpers');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const router = express.Router();
 
 // aiRateLimiter: 20 AI requests per user per hour (audit pattern)
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   message: { error: 'Too many AI requests. Limit: 20 per hour.' },
   standardHeaders: true,
   legacyHeaders: false,

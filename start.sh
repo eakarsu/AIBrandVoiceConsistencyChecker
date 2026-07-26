@@ -59,6 +59,8 @@ if [ ! -f .env ]; then echo "Missing .env; copy .env.example and configure it." 
 if [ ! -d node_modules ] || [ ! -d client/node_modules ]; then echo "Dependencies are absent; run scripts/bootstrap.sh first." >&2; exit 1; fi
 set -a; . ./.env; set +a
 server_port="${PORT:-3001}"; client_port="${CLIENT_PORT:-3000}"
+if [ "${NODE_ENV:-development}" != production ] && [ "${ENABLE_DEMO_CREDENTIAL_AUTOFILL:-true}" = true ]; then psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f server/migrations/001_governed_publishing.sql >/dev/null; node server/provision-demo-credentials.js; fi
+export VITE_API_TARGET="http://127.0.0.1:$server_port"
 for port in "$server_port" "$client_port"; do if command -v lsof >/dev/null && lsof -ti ":$port" >/dev/null 2>&1; then echo "Port $port is already in use; refusing to stop another process." >&2; exit 1; fi; done
 npm start & server_pid=$!
 (cd client && npm run dev -- --port "$client_port") & client_pid=$!

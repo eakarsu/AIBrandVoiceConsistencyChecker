@@ -63,7 +63,7 @@ if [ "${NODE_ENV:-development}" != production ] && [ "${ENABLE_DEMO_CREDENTIAL_A
 export VITE_API_TARGET="http://127.0.0.1:$server_port"
 for port in "$server_port" "$client_port"; do if command -v lsof >/dev/null && lsof -ti ":$port" >/dev/null 2>&1; then echo "Port $port is already in use; refusing to stop another process." >&2; exit 1; fi; done
 npm start & server_pid=$!
-(cd client && npm run dev -- --port "$client_port") & client_pid=$!
+(cd client && npm run dev -- --host 127.0.0.1 --port "$client_port" --strictPort) & client_pid=$!
 cleanup(){ kill "$server_pid" "$client_pid" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 wait "$server_pid" "$client_pid"

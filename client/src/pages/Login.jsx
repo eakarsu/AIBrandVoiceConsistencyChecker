@@ -80,7 +80,7 @@ export default function Login() {
           </button>
 
           <button type="button" onClick={populateCredentials} style={styles.demoBtn}>
-            Use Demo Credentials
+            Auto Fill Demo Credentials
           </button>
         </form>
 

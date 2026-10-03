@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Shield, LogOut, Home, ChevronRight, Bell, FileCheck } from 'lucide-react';
 import { featureConfig } from '../featureConfig';
+import AppSidebar from './AppSidebar';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -14,7 +15,9 @@ export default function Layout({ children }) {
     : null;
 
   return (
-    <div style={styles.layout}>
+    <div className="codex-nav-shell" style={styles.layout}>
+      <AppSidebar />
+      <div className="codex-protected-main">
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.logo} onClick={() => navigate('/')}>
@@ -50,6 +53,7 @@ export default function Layout({ children }) {
       <main style={styles.main}>
         {children}
       </main>
+      </div>
     </div>
   );
 }

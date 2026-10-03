@@ -22,9 +22,9 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-        <Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
-        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
-        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+        <Route path="/insights/timeline" element={<ProtectedRoute><Layout><TimelineView /></Layout></ProtectedRoute>} />
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><Layout><CodexCustomVizFeature /></Layout></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><Layout><CodexOperationsFeature /></Layout></ProtectedRoute>} />
 
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />

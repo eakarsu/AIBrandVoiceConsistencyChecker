@@ -1,0 +1,5 @@
+'use strict';
+const pool=require('../db'),{current,freshActor}=require('./aiExecution');
+function nativeInputGuard(fields){return async(req,res,next)=>{try{if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||Object.keys(req.body).some(key=>!fields.includes(key)))return res.status(400).json({error:'Only the displayed native input fields can be saved. Provider analysis, scores, completion status, owner and approval fields are retained by the server.'});const context=current()||{req,res,controller:new AbortController(),timedOut:false};await freshActor(context,pool);next();}catch(error){res.status(error.status||503).json({error:error.status?error.message:'Actual account or source records could not be checked. Retry before saving.'});}};}
+async function freshRecordActor(req,res,next){try{await freshActor({req,res,controller:new AbortController(),timedOut:false},pool);next();}catch(error){res.status(error.status||503).json({error:error.status?error.message:'Actual account could not be checked. Sign in again or retry.'});}}
+module.exports={nativeInputGuard,freshRecordActor};

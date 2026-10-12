@@ -1,3 +1,5 @@
+import AIResultView from './AIResultView';
+import {nativeRecordRows} from './useBrandSources';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { featureConfig, aiToolsConfig } from '../featureConfig';
@@ -26,18 +28,20 @@ export default function Dashboard() {
   const [aiHistoryFeature, setAiHistoryFeature] = useState('');
   const [aiHistoryLoading, setAiHistoryLoading] = useState(false);
   const [showAiHistory, setShowAiHistory] = useState(false);
+  const [historyError,setHistoryError]=useState('');
+  const [countErrors,setCountErrors]=useState({});
 
   const loadAiHistory = async (pg = 1, feature = '') => {
-    setAiHistoryLoading(true);
+    setAiHistoryLoading(true);setHistoryError('');
     try {
       const params = new URLSearchParams({ page: pg, limit: 10 });
       if (feature) params.set('feature', feature);
       const res = await axios.get(`/api/ai/results?${params}`);
-      setAiHistory(res.data?.data || []);
+      setAiHistory(nativeRecordRows(res.data,'owned AI history'));
       setAiHistoryPagination(res.data?.pagination || null);
       setAiHistoryPage(pg);
-    } catch (_) {
-      setAiHistory([]);
+    } catch (failure) {
+      setHistoryError('Saved AI history could not be loaded: '+(failure.response?.data?.error||failure.message));
     } finally {
       setAiHistoryLoading(false);
     }
@@ -48,20 +52,8 @@ export default function Dashboard() {
     setShowAiHistory(s => !s);
   };
 
-  useEffect(() => {
-    featureConfig.forEach(async (f) => {
-      try {
-        const res = await axios.get(`${f.apiPath}?page=1&limit=1`);
-        // Support both legacy array shape and new {data, pagination} shape
-        const total = Array.isArray(res.data)
-          ? res.data.length
-          : (res.data?.pagination?.total ?? (res.data?.data?.length ?? 0));
-        setCounts(prev => ({ ...prev, [f.key]: total }));
-      } catch (e) {
-        setCounts(prev => ({ ...prev, [f.key]: 0 }));
-      }
-    });
-  }, []);
+  const loadCount=async f=>{try{const res=await axios.get(`${f.apiPath}?page=1&limit=1`);const rows=nativeRecordRows(res.data,f.title);const total=Array.isArray(res.data)?rows.length:res.data.pagination?.total;if(!Number.isSafeInteger(Number(total))||Number(total)<0)throw Error('Native count metadata is unavailable');setCounts(prior=>({...prior,[f.key]:Number(total)}));setCountErrors(prior=>({...prior,[f.key]:''}));}catch(failure){setCounts(prior=>({...prior,[f.key]:null}));setCountErrors(prior=>({...prior,[f.key]:failure.response?.data?.error||failure.message}));}};
+  useEffect(()=>{featureConfig.forEach(loadCount);},[]);
 
   return (
     <div>
@@ -74,7 +66,7 @@ export default function Dashboard() {
           <div style={styles.statBox}>
             <TrendingUp size={20} color="#6366f1" />
             <div>
-              <div style={styles.statNumber}>{Object.values(counts).reduce((a, b) => a + b, 0)}</div>
+              <div style={styles.statNumber}>{Object.values(countErrors).some(Boolean)?'Unavailable':Object.keys(counts).length<featureConfig.length?'Loading…':Object.values(counts).reduce((a,b)=>a+b,0)}</div>
               <div style={styles.statLabel}>Total Items</div>
             </div>
           </div>
@@ -121,9 +113,10 @@ export default function Dashboard() {
               </div>
               <h3 style={styles.cardTitle}>{feature.title}</h3>
               <p style={styles.cardDesc}>{feature.description}</p>
+              {countErrors[feature.key]&&<p role="alert">{countErrors[feature.key]} <button type="button" onClick={event=>{event.stopPropagation();loadCount(feature);}}>Retry {feature.title}</button></p>}
               <div style={styles.cardFooter}>
                 <span style={styles.countBadge}>
-                  {counts[feature.key] !== undefined ? counts[feature.key] : '...'} items
+                  {counts[feature.key]===null?'Unavailable':counts[feature.key]!==undefined?counts[feature.key]+' items':'Loading…'}
                 </span>
                 <ArrowRight size={16} color={isHovered ? feature.color : '#475569'} />
               </div>
@@ -205,7 +198,7 @@ export default function Dashboard() {
                 >{f || 'All Features'}</button>
               ))}
             </div>
-            {aiHistoryLoading ? (
+            {historyError?<p role="alert">{historyError} <button onClick={()=>loadAiHistory(aiHistoryPage,aiHistoryFeature)}>Retry history</button></p>:aiHistoryLoading ? (
               <div style={{ color: '#64748b', textAlign: 'center', padding: 24 }}>Loading…</div>
             ) : aiHistory.length === 0 ? (
               <div style={{ color: '#475569', textAlign: 'center', padding: 24 }}>No AI history yet.</div>
@@ -220,9 +213,7 @@ export default function Dashboard() {
                       <span style={{ color: '#475569', fontSize: 11 }}>{new Date(item.created_at).toLocaleString()}</span>
                     </div>
                     {item.output && (
-                      <pre style={{ background: '#0f172a', color: '#cbd5e1', padding: 10, borderRadius: 8, fontSize: 11, maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
-                        {typeof item.output === 'string' ? item.output : JSON.stringify(item.output, null, 2)}
-                      </pre>
+                      <AIResultView result={item.output} title={item.feature+' · saved result'} model={item.model}/>
                     )}
                   </div>
                 ))}

@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import AIResultView from './AIResultView';
+import BrandExampleButtons from './BrandExampleButtons';
+import useBrandSources, {nativeRecordRows} from './useBrandSources';
+import {nativeBrandPayload} from './BrandAIExamples';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { featureConfig } from '../featureConfig';
@@ -11,9 +15,15 @@ export default function FeaturePage() {
   const { featureKey } = useParams();
   const navigate = useNavigate();
   const config = featureConfig.find(f => f.key === featureKey);
+  const itemTitle = config ? (/Analysis$/.test(config.title) ? config.title : config.title.replace(/ies$/, 'y').replace(/s$/, '')) : 'Item';
 
   const [items, setItems] = useState([]);
-  const [brandProfiles, setBrandProfiles] = useState([]);
+  const sources = useBrandSources(config);
+  const brandProfiles = sources.records['brand-profiles'];
+  const operation = useRef(null);
+  const [allowGeneral,setAllowGeneral] = useState(false);
+  const [listError,setListError] = useState('');
+  useEffect(() => () => { operation.current?.abort(); operation.current=null; }, [featureKey]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -29,29 +39,19 @@ export default function FeaturePage() {
     try {
       setLoading(true);
       const res = await axios.get(`${config.apiPath}?page=${pageNum}&limit=${limit}`);
-      // Support both legacy array shape and new {data, pagination} shape
-      if (Array.isArray(res.data)) {
-        setItems(res.data);
-        setPagination(null);
-      } else {
-        setItems(res.data?.data || []);
-        setPagination(res.data?.pagination || null);
-      }
+      setItems(nativeRecordRows(res.data, config.title));
+      setPagination(Array.isArray(res.data) ? null : res.data.pagination || null);
+      setListError('');
     } catch (err) {
-      setError('Failed to load items');
+      setListError('Failed to load actual '+config.title+': '+(err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
-  }, [config.apiPath]);
+  }, [config?.apiPath]);
 
   useEffect(() => {
     setPage(1);
     fetchItems(1);
-    // Load brand profiles — handle both array and {data} shapes
-    axios.get('/api/brand-profiles?limit=100').then(res => {
-      const profiles = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      setBrandProfiles(profiles);
-    }).catch(() => {});
   }, [fetchItems]);
 
   const handlePageChange = (newPage) => {
@@ -65,6 +65,7 @@ export default function FeaturePage() {
   const openCreate = () => {
     setEditItem(null);
     setFormData({});
+    setAllowGeneral(false);
     setShowForm(true);
   };
 
@@ -76,10 +77,10 @@ export default function FeaturePage() {
         try {
           data[f.name] = Array.isArray(item[f.name]) ? item[f.name].join(', ') : (JSON.parse(item[f.name] || '[]')).join(', ');
         } catch {
-          data[f.name] = item[f.name] || '';
+          data[f.name] = item[f.name] ?? '';
         }
       } else {
-        data[f.name] = item[f.name] || '';
+        data[f.name] = item[f.name] ?? '';
       }
     });
     setFormData(data);
@@ -87,35 +88,21 @@ export default function FeaturePage() {
     setSelectedItem(null);
   };
 
+  const closeForm = () => {operation.current?.abort();operation.current=null;setSubmitting(false);setShowForm(false);};
+  const profileValue = String(formData.brand_profile_id ?? '');
+  const aiSourceBlocked = config.hasAI && !editItem && (sources.loading || sources.error || (sources.needsProfiles && !profileValue && !allowGeneral) || (profileValue && !brandProfiles.some(row=>String(row.id)===profileValue)));
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
+    e.preventDefault();if(submitting || aiSourceBlocked)return;
+    const controller = new AbortController();operation.current=controller;
+    setSubmitting(true);setError('');
     try {
-      const submitData = { ...formData };
-      config.fields.forEach(f => {
-        if (f.type === 'tags' && typeof submitData[f.name] === 'string') {
-          submitData[f.name] = submitData[f.name].split(',').map(s => s.trim()).filter(Boolean);
-        }
-        if (f.type === 'select' && f.optionsFrom === 'brand-profiles' && submitData[f.name]) {
-          submitData[f.name] = parseInt(submitData[f.name]);
-        }
-      });
-
-      if (editItem) {
-        await axios.put(`${config.apiPath}/${editItem.id}`, submitData);
-      } else {
-        await axios.post(config.apiPath, submitData);
-      }
-      setShowForm(false);
-      setFormData({});
-      setEditItem(null);
-      await fetchItems(page);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Operation failed');
-    } finally {
-      setSubmitting(false);
-    }
+      const submitData=nativeBrandPayload(config,formData);
+      if(editItem)await axios.put(`${config.apiPath}/${editItem.id}`,submitData,{signal:controller.signal});
+      else await axios.post(config.apiPath,submitData,{signal:controller.signal});
+      if(controller.signal.aborted||operation.current!==controller)return;
+      setShowForm(false);setFormData({});setEditItem(null);await fetchItems(page);
+    } catch(err) {if(!controller.signal.aborted&&operation.current===controller)setError(err.response?.data?.error||err.message||'Operation failed');}
+    finally {if(operation.current===controller){operation.current=null;setSubmitting(false);}}
   };
 
   const handleDelete = async (id) => {
@@ -190,91 +177,7 @@ export default function FeaturePage() {
     return <span style={{ color: '#cbd5e1', fontSize: '13px' }}>{val || '—'}</span>;
   };
 
-  const renderAIOutput = (text) => {
-    if (!text) return null;
-    const lines = text.split('\n');
-    return (
-      <div style={styles.aiOutput}>
-        <div style={styles.aiHeader}>
-          <Sparkles size={18} color="#fbbf24" />
-          <span style={styles.aiHeaderText}>AI Analysis</span>
-        </div>
-        <div style={styles.aiBody}>
-          {lines.map((line, i) => {
-            const trimmed = line.trim();
-            if (!trimmed) return <div key={i} style={{ height: '8px' }} />;
-
-            // Section headers (KEY: value pattern)
-            const headerMatch = trimmed.match(/^([A-Z_]+(?:\s[A-Z_]+)*):\s*(.*)$/);
-            if (headerMatch) {
-              const label = headerMatch[1].replace(/_/g, ' ');
-              const value = headerMatch[2];
-
-              // Score values
-              const scoreMatch = value.match(/^\[?(\d+)\]?$/);
-              if (scoreMatch) {
-                const score = parseInt(scoreMatch[1]);
-                return (
-                  <div key={i} style={styles.aiMetric}>
-                    <span style={styles.aiMetricLabel}>{label}</span>
-                    <div style={styles.aiScoreBar}>
-                      <div style={{ ...styles.aiScoreFill, width: `${score}%`, background: getScoreColor(score) }} />
-                    </div>
-                    <span style={{ ...styles.aiMetricValue, color: getScoreColor(score) }}>{score}%</span>
-                  </div>
-                );
-              }
-
-              // Percentage values
-              const pctMatch = value.match(/^\[?(\d+)%?\]?$/);
-              if (pctMatch) {
-                const pct = parseInt(pctMatch[1]);
-                return (
-                  <div key={i} style={styles.aiMetric}>
-                    <span style={styles.aiMetricLabel}>{label}</span>
-                    <div style={styles.aiScoreBar}>
-                      <div style={{ ...styles.aiScoreFill, width: `${pct}%`, background: getScoreColor(pct) }} />
-                    </div>
-                    <span style={{ ...styles.aiMetricValue, color: getScoreColor(pct) }}>{pct}%</span>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={i} style={styles.aiSection}>
-                  <div style={styles.aiSectionLabel}>{label}</div>
-                  <div style={styles.aiSectionValue}>{value || ''}</div>
-                </div>
-              );
-            }
-
-            // Bullet points
-            if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-              return (
-                <div key={i} style={styles.aiBullet}>
-                  <div style={styles.aiBulletDot} />
-                  <span>{trimmed.substring(2)}</span>
-                </div>
-              );
-            }
-
-            // Numbered items
-            const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
-            if (numMatch) {
-              return (
-                <div key={i} style={styles.aiNumbered}>
-                  <span style={styles.aiNumber}>{numMatch[1]}</span>
-                  <span>{numMatch[2]}</span>
-                </div>
-              );
-            }
-
-            return <p key={i} style={styles.aiParagraph}>{trimmed}</p>;
-          })}
-        </div>
-      </div>
-    );
-  };
+  const renderAIOutput = text => text ? <AIResultView result={text} title={config.title+' · saved analysis'} label="Saved text · provider provenance unverified in this record view" /> : null;
 
   return (
     <div>
@@ -291,7 +194,7 @@ export default function FeaturePage() {
         </div>
         <button onClick={openCreate} style={{ ...styles.addBtn, background: config.gradient }}>
           <Plus size={18} />
-          New {config.title.replace(/s$/, '').replace(/ies$/, 'y')}
+          New {itemTitle}
         </button>
       </div>
 
@@ -305,7 +208,7 @@ export default function FeaturePage() {
 
       {/* List Table */}
       <div style={styles.tableCard}>
-        {loading ? (
+        {listError ? <div role="alert" style={styles.emptyBox}>{listError} <button onClick={()=>fetchItems(page)}>Retry list</button></div> : loading ? (
           <div style={styles.loadingBox}><Loader2 size={24} className="spin" style={{ animation: 'spin 1s linear infinite' }} /> Loading...</div>
         ) : items.length === 0 ? (
           <div style={styles.emptyBox}>
@@ -397,7 +300,7 @@ export default function FeaturePage() {
 
       {/* Detail Panel */}
       {selectedItem && (
-        <div style={styles.detailPanel}>
+        <div style={{...styles.modalOverlay,zIndex:1100}} onClick={()=>setSelectedItem(null)}><div role="dialog" aria-modal="true" aria-label={config.title+' details'} style={{...styles.detailPanel,maxHeight:'90vh',overflowY:'auto',width:'min(1100px,95vw)'}} onClick={event=>event.stopPropagation()}>
           <div style={styles.detailHeader}>
             <h2 style={styles.detailTitle}>
               {selectedItem[config.columns[0]] || selectedItem.title || selectedItem.name || `Item #${selectedItem.id}`}
@@ -410,7 +313,7 @@ export default function FeaturePage() {
                 <Trash2 size={15} /> Delete
               </button>
               <button onClick={() => setSelectedItem(null)} style={styles.closeBtn}>
-                <X size={18} />
+                Cancel
               </button>
             </div>
           </div>
@@ -454,6 +357,7 @@ export default function FeaturePage() {
             })}
           </div>
 
+          {config.hasAI && <p>This shared record view does not establish provider provenance or approval. Legacy saved text may be an example. Your account-owned AI history records genuine new provider receipts. Editing inputs does not rerun the saved analysis; generate a new record for a new assessment.</p>}
           {/* AI Analysis Output */}
           {config.hasAI && selectedItem[config.aiField] && renderAIOutput(selectedItem[config.aiField])}
 
@@ -489,29 +393,35 @@ export default function FeaturePage() {
               </div>
             </div>
           )}
-        </div>
+        </div></div>
       )}
 
       {/* Create/Edit Modal */}
       {showForm && (
-        <div style={styles.modalOverlay} onClick={() => setShowForm(false)}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+        <div style={styles.modalOverlay} onClick={closeForm}>
+          <div role="dialog" aria-modal="true" aria-label={(editItem ? 'Edit ' : 'New ')+config.title} style={{...styles.modal,maxHeight:'90vh',overflowY:'auto'}} onClick={e => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>
-                {editItem ? 'Edit' : 'New'} {config.title.replace(/s$/, '').replace(/ies$/, 'y')}
+                {editItem ? 'Edit' : 'New'} {itemTitle}
               </h2>
-              <button onClick={() => setShowForm(false)} style={styles.closeBtn}><X size={18} /></button>
+              <button onClick={closeForm} style={styles.closeBtn}><X size={18} /></button>
             </div>
-            <form onSubmit={handleSubmit} style={styles.modalForm}>
+            <form onSubmit={handleSubmit} style={styles.modalForm} aria-label={config.title+' input form'}>
+              {config.hasAI && !editItem && <BrandExampleButtons config={config} current={formData} sources={sources.records} disabled={submitting||sources.loading||Boolean(sources.error)} onFill={setFormData}/>}
+              {sources.loading&&<p role="status">Loading actual brand profiles…</p>}
+              {sources.error&&<p role="alert">{sources.error} <button type="button" onClick={sources.retry}>Retry source records</button></p>}
+              {config.hasAI && sources.needsProfiles && !editItem && <><p>Choose an actual shared brand profile. No source profile is fabricated by these examples.</p>{!brandProfiles.length&&!sources.loading&&!sources.error&&<p role="alert">No actual brand profile is available. Create one or explicitly choose a general review.</p>}<label><input type="checkbox" data-ai-exclude="true" checked={allowGeneral} onChange={event=>setAllowGeneral(event.target.checked)}/> I want a general review without a brand profile.</label></>}
+              {error&&<p role="alert">{error}</p>}
               {config.fields.map(field => (
                 <div key={field.name} style={styles.formGroup}>
-                  <label style={styles.formLabel}>
+                  <label htmlFor={'brand-record-'+field.name} style={styles.formLabel}>
                     {field.label}
                     {field.required && <span style={{ color: '#f43f5e' }}> *</span>}
                   </label>
                   {field.type === 'textarea' ? (
                     <textarea
-                      value={formData[field.name] || ''}
+                      id={'brand-record-'+field.name} name={field.name} data-ai-field={field.name}
+                      value={formData[field.name] ?? ''}
                       onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
                       style={styles.formTextarea}
                       rows={4}
@@ -520,7 +430,8 @@ export default function FeaturePage() {
                     />
                   ) : field.type === 'select' ? (
                     <select
-                      value={formData[field.name] || ''}
+                      id={'brand-record-'+field.name} name={field.name} data-ai-field={field.name}
+                      value={formData[field.name] ?? ''}
                       onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
                       style={styles.formSelect}
                     >
@@ -536,16 +447,18 @@ export default function FeaturePage() {
                     </select>
                   ) : field.type === 'tags' ? (
                     <input
+                      id={'brand-record-'+field.name} name={field.name} data-ai-field={field.name}
                       type="text"
-                      value={formData[field.name] || ''}
+                      value={formData[field.name] ?? ''}
                       onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
                       style={styles.formInput}
                       placeholder={field.placeholder || 'Comma-separated values'}
                     />
                   ) : (
                     <input
+                      id={'brand-record-'+field.name} name={field.name} data-ai-field={field.name}
                       type="text"
-                      value={formData[field.name] || ''}
+                      value={formData[field.name] ?? ''}
                       onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
                       style={styles.formInput}
                       required={field.required}
@@ -558,22 +471,22 @@ export default function FeaturePage() {
               {config.hasAI && !editItem && (
                 <div style={styles.aiNotice}>
                   <Sparkles size={16} color="#fbbf24" />
-                  <span>AI analysis will be generated automatically upon creation</span>
+                  <span>Review every field, then click Generate with OpenRouter to create a new saved result. No publication or approval occurs.</span>
                 </div>
               )}
 
               <div style={styles.formActions}>
-                <button type="button" onClick={() => setShowForm(false)} style={styles.cancelBtn}>
+                <button type="button" onClick={closeForm} style={styles.cancelBtn}>
                   Cancel
                 </button>
-                <button type="submit" disabled={submitting} style={{ ...styles.submitFormBtn, background: config.gradient }}>
+                <button type="submit" disabled={submitting || aiSourceBlocked} style={{ ...styles.submitFormBtn, background: config.gradient }}>
                   {submitting ? (
                     <>
                       <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                       {config.hasAI && !editItem ? 'Analyzing with AI...' : 'Saving...'}
                     </>
                   ) : (
-                    editItem ? 'Update' : config.hasAI ? 'Create & Analyze' : 'Create'
+                    editItem ? 'Update inputs' : config.hasAI ? 'Generate with OpenRouter' : 'Create'
                   )}
                 </button>
               </div>

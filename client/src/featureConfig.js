@@ -322,7 +322,7 @@ export const aiToolsConfig = [
     apiPath: '/api/ai/competitor-benchmark',
     fields: [
       { name: 'our_brand_samples', label: 'Our Samples (one per line)', type: 'textarea', transform: 'lines' },
-      { name: 'competitors', label: 'Competitors JSON [{"name":"X","samples":["..."]}]', type: 'textarea', required: true, transform: 'json' },
+      { name: 'competitors', label: 'Competitors JSON [{"name":"X","samples":["..."]}]', placeholder: '[{"name":"Fictional brand","samples":["Fictional message for a brand-voice comparison."]}]', type: 'textarea', required: true, transform: 'json' },
     ],
   },
   {
@@ -413,4 +413,12 @@ export const aiToolsConfig = [
       { name: 'brand_profile_id', label: 'Brand Profile', type: 'select', optionsFrom: 'brand-profiles' },
     ],
   },
+  {key:'analyze-batch',title:'Saved Content Batch Review',description:'Review actual accessible saved content. No source record or score is invented.',icon:'FileSearch',color:'#6366f1',apiPath:'/api/ai/analyze-batch',fields:[{name:'content_ids',label:'Actual saved content (select up to 20)',type:'multiselect',optionsFrom:'content-analysis',required:true}]},
+  {key:'monitor-competitor',title:'Supplied Competitor Text Review',description:'Review supplied text against an actual brand profile. This tool does not fetch or monitor a website.',icon:'Swords',color:'#ef4444',apiPath:'/api/ai/monitor-competitor',fields:[{name:'competitor_url',label:'Competitor reference (name or URL; text only)',type:'text'},{name:'sample_content',label:'Supplied competitor text',type:'textarea',required:true},{name:'brand_profile_id',label:'Actual Brand Profile',type:'select',optionsFrom:'brand-profiles'}]},
+  {key:'native-brand-cop',title:'Supplied Content Brand Review',description:'Native context-only reviewer. It does not intercept or publish outgoing content.',icon:'Shield',color:'#6366f1',apiPath:'/api/brand-cop/run',fields:[{name:'context',label:'Supplied review context',type:'textarea',transform:'json',required:true}]},
+  {key:'native-style-guide',title:'Supplied Style Guidance Review',description:'Review only the style guidance you provide. This native scaffold has no document retrieval, embeddings or editor integration.',icon:'BookOpen',color:'#10b981',apiPath:'/api/style-guide-rag/run',fields:[{name:'context',label:'Supplied style context',type:'textarea',transform:'json',required:true}]},
+  {key:'native-drift-context',title:'Supplied Voice Drift Review',description:'Review the supplied snapshot. This native scaffold does not stream social data or send live alerts.',icon:'Activity',color:'#f59e0b',apiPath:'/api/voice-drift-stream/run',fields:[{name:'context',label:'Supplied drift context',type:'textarea',transform:'json',required:true}]},
+  {key:'native-agency-context',title:'Agency Planning Context Review',description:'Review a supplied agency planning brief. This native scaffold does not deploy a site or change agency configuration.',icon:'LayoutTemplate',color:'#06b6d4',apiPath:'/api/agency-white-label/run',fields:[{name:'context',label:'Supplied agency context',type:'textarea',transform:'json',required:true}]},
+  {key:'native-pipeline',title:'Three-Stage Content Review',description:'One explicit request runs the existing voice, tone and routing suggestion stages. Suggestions do not approve publication.',icon:'GitMerge',color:'#8b5cf6',apiPath:'/api/extras/agents/run-pipeline',fields:[{name:'content',label:'Supplied content',type:'textarea',required:true},{name:'brand_voice',label:'Supplied brand voice',type:'textarea'}]},
+
 ];

@@ -21,10 +21,11 @@ function TimelineView() {
     <section style={{ padding: 24, color: '#172033' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
-          <p style={{ margin: 0, color: '#64748b', fontSize: 13, fontWeight: 700, textTransform: 'uppercase' }}>Custom visualization</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 13, fontWeight: 700, textTransform: 'uppercase' }}>Fictional visualization example</p>
+          <p>Fixed demonstration values. This illustration is not live analytics, provider output or verified operational data.</p>
           <h1 style={{ margin: '6px 0 0', fontSize: 30 }}> AI Brand Voice Consistency Checker Insight Map</h1>
         </div>
-        <div style={{ padding: '10px 14px', border: '1px solid #d7dde8', borderRadius: 8, background: '#f8fafc' }}>Live scenario model</div>
+        <div style={{ padding: '10px 14px', border: '1px solid #d7dde8', borderRadius: 8, background: '#f8fafc' }}>Fixed fictional illustration</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.3fr) minmax(260px, .7fr)', gap: 18, marginTop: 20 }}>

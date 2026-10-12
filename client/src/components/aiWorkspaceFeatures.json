@@ -1,0 +1,282 @@
+[
+  {
+    "name": "AgenticBrandCopReviewingAllOutgoingContentWPage",
+    "id": "cf-agentic-brand-cop-reviewing-all-outgoing-content-w",
+    "title": "Supplied-content brand review advisory",
+    "description": "Review the supplied example text and brand context. Scores are model recommendations; no outgoing content is intercepted or approved.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run Agentic brand-cop reviewing all outgoing content with explainable scores for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this Agentic brand-cop reviewing all outgoing content with explainable scores data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for Agentic brand-cop reviewing all outgoing content with explainable scores.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoAiAutoRewriteSuggestionsInlineInCmsPage",
+    "id": "gap-no-ai-auto-rewrite-suggestions-inline-in-cms",
+    "title": "CMS rewrite planning advisory",
+    "description": "Prepare reviewable rewrite suggestions from supplied copy. This report does not connect to or modify a CMS.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No AI auto-rewrite suggestions inline in CMS for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No AI auto-rewrite suggestions inline in CMS data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No AI auto-rewrite suggestions inline in CMS.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoAiBrandAssetComplianceForVideoPodcastTraPage",
+    "id": "gap-no-ai-brand-asset-compliance-for-video-podcast-tra",
+    "title": "Transcript brand review advisory",
+    "description": "Review a manually supplied transcript and brand brief. No audio, video or file is retrieved or verified.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No AI brand-asset compliance for video/podcast transcripts for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No AI brand-asset compliance for video/podcast transcripts data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No AI brand-asset compliance for video/podcast transcripts.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoBrowserExtensionEditorPluginPage",
+    "id": "gap-no-browser-extension-editor-plugin",
+    "title": "Editor extension planning advisory",
+    "description": "Plan an editor or browser extension workflow. No extension is installed or connected by generating this report.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No browser extension / editor plugin for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No browser extension / editor plugin data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No browser extension / editor plugin.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoBulkContentImportOrScheduledScansPage",
+    "id": "gap-no-bulk-content-import-or-scheduled-scans",
+    "title": "Bulk-content review planning advisory",
+    "description": "Plan a review of supplied content observations. No import or scheduled external scan is performed.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No bulk-content import or scheduled scans for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No bulk-content import or scheduled scans data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No bulk-content import or scheduled scans.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoCmsIntegrationsWordpressContentfulWebflowPage",
+    "id": "gap-no-cms-integrations-wordpress-contentful-webflow",
+    "title": "CMS integration planning advisory",
+    "description": "Compare CMS integration options and prerequisites from supplied context. No CMS connection or publication is executed.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No CMS integrations (WordPress, Contentful, Webflow) for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No CMS integrations (WordPress, Contentful, Webflow) data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No CMS integrations (WordPress, Contentful, Webflow).\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoImageLogoStyleConsistencyScoringVisionPage",
+    "id": "gap-no-image-logo-style-consistency-scoring-vision",
+    "title": "Visual brand review planning advisory",
+    "description": "Prepare a review checklist from a supplied visual brief. No image or logo is inspected or verified by this text-only report.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No image/logo style consistency scoring (vision) for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No image/logo style consistency scoring (vision) data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No image/logo style consistency scoring (vision).\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoNotificationSystemForDriftAlertsPage",
+    "id": "gap-no-notification-system-for-drift-alerts",
+    "title": "Drift notification planning advisory",
+    "description": "Plan notification thresholds and human review from supplied examples. No alert is sent or monitoring service connected.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No notification system for drift alerts for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No notification system for drift alerts data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No notification system for drift alerts.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoRealTimeVoiceScoringOnLiveDraftsStreaminPage",
+    "id": "gap-no-real-time-voice-scoring-on-live-drafts-streamin",
+    "title": "Live-draft review planning advisory",
+    "description": "Review supplied draft examples and plan a future live review workflow. No stream or live editor is accessed.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No real-time voice scoring on live drafts (streaming) for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No real-time voice scoring on live drafts (streaming) data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No real-time voice scoring on live drafts (streaming).\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "NoSlackTeamsApprovalRoutingPage",
+    "id": "gap-no-slack-teams-approval-routing",
+    "title": "Approval-routing planning advisory",
+    "description": "Plan human approval routing from supplied context. No Slack or Teams message is sent and no approval is granted.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run No Slack/Teams approval routing for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this No Slack/Teams approval routing data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for No Slack/Teams approval routing.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "Only5FrontendPagesWorkflowUxIsShallowVs22Page",
+    "id": "gap-only-5-frontend-pages-workflow-ux-is-shallow-vs-22",
+    "title": "Brand workflow design advisory",
+    "description": "Review the supplied workflow goals and constraints. Produce an implementation plan without claiming completed application changes.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run Only 5 frontend pages \u2014 workflow UX is shallow vs. 22 backend routes for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this Only 5 frontend pages \u2014 workflow UX is shallow vs. 22 backend routes data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for Only 5 frontend pages \u2014 workflow UX is shallow vs. 22 backend routes.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "RagOverTheBrandSStyleGuideForInlineGuidanPage",
+    "id": "cf-rag-over-the-brand-s-style-guide-for-inline-guidan",
+    "title": "Style-guide context advisory",
+    "description": "Review manually supplied style-guide text and draft context. No retrieval, corpus indexing or editor integration is performed.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run RAG over the brand's style guide for inline guidance in editor plugins for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this RAG over the brand's style guide for inline guidance in editor plugins data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for RAG over the brand's style guide for inline guidance in editor plugins.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "RealTimeVoiceDriftAlertsStreamedFromSocialPage",
+    "id": "cf-real-time-voice-drift-alerts-streamed-from-social-",
+    "title": "Voice-drift context advisory",
+    "description": "Compare supplied hypothetical historical and recent writing samples. No social or CMS stream is monitored.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run Real-time voice-drift alerts streamed from social/CMS publish events for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this Real-time voice-drift alerts streamed from social/CMS publish events data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for Real-time voice-drift alerts streamed from social/CMS publish events.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  },
+  {
+    "name": "WhiteLabelDeploymentForAgenciesServicingMultPage",
+    "id": "cf-white-label-deployment-for-agencies-servicing-mult",
+    "title": "Agency rollout planning advisory",
+    "description": "Plan an agency rollout using supplied constraints. No site, tenant or external service is deployed.",
+    "samples": [
+      {
+        "label": "Scenario",
+        "value": "Run White-label deployment for agencies servicing multiple brand clients for a realistic customer case.\nContext: a team needs a practical recommendation based on incomplete operating data.\nGoal: identify the best action, key risks, missing information, and expected business impact.\nReturn: summary, prioritized action plan, assumptions, and follow-up questions."
+      },
+      {
+        "label": "Data sample",
+        "value": "Analyze this White-label deployment for agencies servicing multiple brand clients data sample.\nInput records:\n- Record 1: urgent, customer impact high, owner unassigned\n- Record 2: medium priority, blocked by missing data\n- Record 3: recurring issue, automation opportunity\nReturn structured findings, anomalies, recommendations, and confidence."
+      },
+      {
+        "label": "Executive review",
+        "value": "Prepare an executive review for White-label deployment for agencies servicing multiple brand clients.\nAudience: business owner, operations lead, and implementation team.\nInclude impact, risk, estimated effort, decision points, and a concise next-step plan."
+      }
+    ]
+  }
+]

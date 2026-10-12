@@ -44,11 +44,11 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { title, content, channel, author, version, change_type } = req.body;
+    const { title, content, channel, author, version, brand_profile_id, change_type } = req.body;
     if (!title) return res.status(400).json({ error: 'title is required' });
     const result = await pool.query(
-      `UPDATE content_history SET title=$1, content=$2, channel=$3, author=$4, version=$5, change_type=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
-      [title, content, channel, author, version, change_type, req.params.id]
+      `UPDATE content_history SET title=$1, content=$2, channel=$3, author=$4, version=$5, brand_profile_id=$6, change_type=$7, updated_at=NOW() WHERE id=$8 RETURNING *`,
+      [title, content, channel, author, version, brand_profile_id || null, change_type, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);

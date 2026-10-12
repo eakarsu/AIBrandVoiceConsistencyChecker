@@ -4,4 +4,4 @@ require('dotenv').config();
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined });
 
-module.exports = pool;
+module.exports = require('./lib/aiExecution').wrapPool(pool);

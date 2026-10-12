@@ -1,55 +1,20 @@
-import React, { useMemo, useState } from 'react';
-
-const initialItems = [
-  { id: 1, owner: 'Ops', priority: 'High', status: 'Ready', task: 'Review exception queue' },
-  { id: 2, owner: 'AI', priority: 'Medium', status: 'In progress', task: 'Draft recommended next actions' },
-  { id: 3, owner: 'Compliance', priority: 'Low', status: 'Queued', task: 'Attach audit evidence' },
-];
-
-export default function CodexOperationsFeature() {
-  const [query, setQuery] = useState('');
-  const [items, setItems] = useState(initialItems);
-  const [task, setTask] = useState('');
-
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return items;
-    return items.filter((item) => Object.values(item).join(' ').toLowerCase().includes(normalized));
-  }, [items, query]);
-
-  function addTask(event) {
-    event.preventDefault();
-    if (!task.trim()) return;
-    setItems((current) => [
-      { id: Date.now(), owner: 'User', priority: 'Medium', status: 'Queued', task: task.trim() },
-      ...current,
-    ]);
-    setTask('');
-  }
-
-  return (
-    <section style={{ padding: 24, color: '#172033' }}>
-      <p style={{ margin: 0, color: '#64748b', fontSize: 13, fontWeight: 700, textTransform: 'uppercase' }}>Non-visual workflow</p>
-      <h1 style={{ margin: '6px 0 18px', fontSize: 30 }}> AI Brand Voice Consistency Checker Operations Desk</h1>
-
-      <form onSubmit={addTask} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto', gap: 10, marginBottom: 16 }}>
-        <input value={task} onChange={(event) => setTask(event.target.value)} placeholder="Add an operational follow-up" style={{ padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: 8 }} />
-        <button type="submit" style={{ padding: '12px 16px', border: 0, borderRadius: 8, background: '#172033', color: '#ffffff', fontWeight: 700 }}>Add task</button>
-      </form>
-
-      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search owner, priority, status, or task" style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 16 }} />
-
-      <div style={{ border: '1px solid #d7dde8', borderRadius: 8, overflow: 'hidden', background: '#ffffff' }}>
-        {filtered.map((item) => (
-          <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 120px', gap: 12, padding: 14, borderBottom: '1px solid #e2e8f0', alignItems: 'center' }}>
-            <strong>{item.task}</strong>
-            <span>{item.owner}</span>
-            <span>{item.priority}</span>
-            <span>{item.status}</span>
-          </div>
-        ))}
-        {filtered.length === 0 && <div style={{ padding: 18, color: '#64748b' }}>No matching workflow items.</div>}
-      </div>
-    </section>
-  );
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import axios from 'axios';
+import {createPortal} from 'react-dom';
+import {nativeRecordRows} from './useBrandSources';
+const fields=['title','description','priority','status','due_date'];
+const blank={title:'',description:'',priority:'normal',status:'draft',due_date:''};
+export default function CodexOperationsFeature(){
+ const [items,setItems]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(''),[selected,setSelected]=useState(null),[editing,setEditing]=useState(false),[form,setForm]=useState(blank),[busy,setBusy]=useState(false),operation=useRef(null),listRequest=useRef(null),returnFocus=useRef(null),dialog=useRef(null);
+ const load=useCallback(async()=>{listRequest.current?.abort();const controller=new AbortController();listRequest.current=controller;setLoading(true);setError('');try{const response=await axios.get('/api/operations?limit=100',{signal:controller.signal});const rows=nativeRecordRows(response.data,'owned draft notes');if(!controller.signal.aborted)setItems(rows);}catch(failure){if(!controller.signal.aborted)setError(failure.response?.data?.error||failure.message);}finally{if(!controller.signal.aborted)setLoading(false);}},[]);
+ useEffect(()=>{load();return()=>{listRequest.current?.abort();operation.current?.abort();};},[load]);
+ const close=()=>{operation.current?.abort();operation.current=null;setBusy(false);setSelected(null);setEditing(false);returnFocus.current?.focus?.();};
+ useEffect(()=>{if(!selected&&!editing)return;const node=dialog.current;node?.querySelector('button,input,textarea,select')?.focus();const key=event=>{if(event.key==='Escape'){event.preventDefault();close();}if(event.key==='Tab'){const controls=[...node.querySelectorAll('button:not([disabled]),input,textarea,select')];if(!controls.length)return;const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}};document.addEventListener('keydown',key);return()=>document.removeEventListener('keydown',key);},[Boolean(selected),editing]);
+ const open=async(id,event)=>{returnFocus.current=event.currentTarget;operation.current?.abort();const controller=new AbortController();operation.current=controller;setError('');try{const response=await axios.get('/api/operations/'+id,{signal:controller.signal});if(!controller.signal.aborted&&operation.current===controller){setSelected(response.data);setEditing(false);}}catch(failure){if(!controller.signal.aborted)setError(failure.response?.data?.error||failure.message);}finally{if(operation.current===controller)operation.current=null;}};
+ const edit=()=>{setForm(Object.fromEntries(fields.map(field=>[field,selected[field]??blank[field]])));setEditing(true);};
+ const save=async(event)=>{event.preventDefault();if(busy)return;const controller=new AbortController();operation.current=controller;setBusy(true);setError('');try{const body={...form,...(selected?{recordVersion:selected.version}:{})};const response=selected?await axios.put('/api/operations/'+selected.id,body,{signal:controller.signal}):await axios.post('/api/operations',body,{signal:controller.signal});if(controller.signal.aborted||operation.current!==controller)return;setSelected(response.data);setEditing(false);await load();}catch(failure){if(!controller.signal.aborted&&operation.current===controller)setError(failure.response?.data?.error||failure.message);}finally{if(operation.current===controller){operation.current=null;setBusy(false);}}};
+ const remove=async()=>{if(!window.confirm('Delete this ordinary draft note?'))return;if(busy)return;const controller=new AbortController();operation.current=controller;setBusy(true);setError('');try{await axios.delete('/api/operations/'+selected.id,{data:{recordVersion:selected.version},signal:controller.signal});if(controller.signal.aborted||operation.current!==controller)return;close();await load();}catch(failure){if(!controller.signal.aborted&&operation.current===controller)setError(failure.response?.data?.error||failure.message);}finally{if(operation.current===controller){operation.current=null;setBusy(false);}}};
+ return <section style={{padding:24,color:'#e2e8f0'}}><h1>Operations Drafts</h1><p>Private saved planning notes. Synthetic examples are fictional drafts; they do not record executed work, AI output, publishing approval, delivery or verified evidence.</p><button type="button" onClick={event=>{returnFocus.current=event.currentTarget;setSelected(null);setForm(blank);setEditing(true);}}>New draft note</button>{error&&<p role="alert">{error} <button onClick={load}>Retry draft list</button></p>}{loading?<p role="status">Loading actual saved drafts…</p>:<table style={{width:'100%',marginTop:18}}><thead><tr><th>Draft</th><th>Priority</th><th>Status</th><th>Due date</th><th>Example label</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><button onClick={event=>open(item.id,event)}>{item.title}</button></td><td>{item.priority}</td><td>{item.status}</td><td>{item.due_date||'No date'}</td><td>{item.is_demo?'Synthetic planning example':'Your saved draft'}</td></tr>)}</tbody></table>}{!loading&&!error&&!items.length&&<p>No actual saved drafts. Use New draft note to create your own.</p>}
+ {(selected||editing)&&createPortal(<div onClick={close} style={{position:'fixed',inset:0,background:'#020617dc',zIndex:1200,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}><section ref={dialog} role="dialog" aria-modal="true" aria-label={editing?'Edit operations draft':'Operations draft details'} onClick={event=>event.stopPropagation()} style={{width:'min(900px,100%)',maxHeight:'90vh',overflowY:'auto',background:'#0f172a',border:'1px solid #475569',borderRadius:16,padding:20}}><h2>{editing?(selected?'Edit draft inputs':'New draft note'):selected.title}</h2>{error&&<p role="alert">{error}</p>}{editing?<form onSubmit={save}><label>Title<input name="title" required maxLength={200} value={form.title} onChange={event=>setForm({...form,title:event.target.value})} style={{display:'block',width:'100%'}}/></label><label>Draft notes<textarea name="description" maxLength={10000} value={form.description} onChange={event=>setForm({...form,description:event.target.value})} style={{display:'block',width:'100%',minHeight:150}}/></label><label>Priority<select name="priority" value={form.priority} onChange={event=>setForm({...form,priority:event.target.value})}>{['low','normal','high'].map(value=><option key={value}>{value}</option>)}</select></label><label>Status<select name="status" value={form.status} onChange={event=>setForm({...form,status:event.target.value})}>{['draft','archived'].map(value=><option key={value}>{value}</option>)}</select></label><label>Due date<input name="due_date" type="date" value={form.due_date} onChange={event=>setForm({...form,due_date:event.target.value})}/></label><div style={{display:'flex',gap:10,marginTop:14}}><button disabled={busy} type="submit">{busy?'Saving…':'Save draft'}</button><button type="button" onClick={close}>Cancel</button></div></form>:<><p style={{whiteSpace:'pre-wrap'}}>{selected.description}</p><p>{selected.is_demo?'Synthetic planning example · no actual work or approval claimed.':'Your manually saved draft notes.'}</p><p>Priority: {selected.priority} · Status: {selected.status} · Due: {selected.due_date||'No date'}</p><div style={{display:'flex',gap:10}}><button disabled={busy} onClick={edit}>Edit</button><button disabled={busy} onClick={remove}>Delete</button><button onClick={close}>Cancel</button></div></>}</section></div>,document.body)}
+ </section>;
 }

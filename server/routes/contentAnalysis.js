@@ -1,9 +1,11 @@
+const {nativeInputGuard,freshRecordActor}=require('../lib/nativeRecordInput');
+const inputFields=["title","content","brand_profile_id","channel"];
 const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = require('express-rate-limit');
-const { callOpenRouter, parseLabeledFields, parseAIJson, saveAIResult, DEFAULT_MODEL } = require('../lib/aiHelpers');
+const { callOpenRouter, parseLabeledFields, parseAIJson, saveAIResult, DEFAULT_MODEL, nativeNumberField } = require('../lib/aiHelpers');
 const router = express.Router();
 
 const aiRateLimiter = rateLimit({
@@ -28,7 +30,7 @@ router.get('/', auth, async (req, res) => {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -38,11 +40,11 @@ router.get('/:id', auth, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.post('/', auth, aiRateLimiter, async (req, res) => {
+router.post('/', auth, nativeInputGuard(inputFields), aiRateLimiter, async (req, res) => {
   try {
     const { title, content, brand_profile_id, channel } = req.body;
     if (!title || !content) {
@@ -71,12 +73,12 @@ router.post('/', auth, aiRateLimiter, async (req, res) => {
 
     // Real parsing — no more Math.random
     const fields = parseLabeledFields(aiResponse, ['CONSISTENCY_SCORE', 'TONE_MATCH', 'VOCABULARY_ALIGNMENT']);
-    const consistency_score = parseInt(String(fields.consistency_score || '').match(/\d+/)?.[0] || '0', 10);
+    const consistency_score = nativeNumberField(fields, 'consistency_score');
 
     const result = await pool.query(
       `INSERT INTO content_analyses (title, content, brand_profile_id, channel, ai_analysis, consistency_score, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [title, content, brand_profile_id, channel, aiResponse, consistency_score || 0, 'completed']
+      [title, content, brand_profile_id, channel, aiResponse, consistency_score, 'completed']
     );
 
     await saveAIResult(pool, {
@@ -90,31 +92,31 @@ router.post('/', auth, aiRateLimiter, async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, nativeInputGuard(inputFields), async (req, res) => {
   try {
-    const { title, content, brand_profile_id, channel, status } = req.body;
+    const { title, content, brand_profile_id, channel } = req.body;
     const result = await pool.query(
-      `UPDATE content_analyses SET title=$1, content=$2, brand_profile_id=$3, channel=$4, status=$5, updated_at=NOW() WHERE id=$6 RETURNING *`,
-      [title, content, brand_profile_id, channel, status, req.params.id]
+      `UPDATE content_analyses SET title=$1, content=$2, brand_profile_id=$3, channel=$4, updated_at=NOW() WHERE id=$5 RETURNING *`,
+      [title, content, brand_profile_id, channel, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, freshRecordActor, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM content_analyses WHERE id = $1 RETURNING *', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 

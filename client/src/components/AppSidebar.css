@@ -15,3 +15,6 @@
 .codex-side-link:hover,.codex-side-link:focus-visible{background:#1e293b;color:#fff!important}.codex-side-link.active{background:#2563eb;color:#fff!important}
 .codex-side-empty{color:#cbd5e1;font-size:13px;padding:8px 11px}
 @media(max-width:800px){.codex-nav-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}.codex-nav-shell>.codex-side{grid-column:1;grid-row:1;position:relative;height:auto;max-height:280px}.codex-nav-shell>:not(.codex-side){grid-column:1}}
+
+/* Keep the advisory launcher clear of the final native navigation links. */
+:root .ai-library-launcher-floating{left:auto;right:18px;}

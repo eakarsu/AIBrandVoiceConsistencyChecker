@@ -1,3 +1,5 @@
+const {nativeInputGuard,freshRecordActor}=require('../lib/nativeRecordInput');
+const inputFields=["title","original_content","suggestion_type","brand_profile_id"];
 const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
@@ -25,7 +27,7 @@ router.get('/', auth, async (req, res) => {
     const result = await pool.query('SELECT * FROM ai_suggestions ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]);
     res.json({ data: result.rows, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -35,11 +37,11 @@ router.get('/:id', auth, async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.post('/', auth, aiRateLimiter, async (req, res) => {
+router.post('/', auth, nativeInputGuard(inputFields), aiRateLimiter, async (req, res) => {
   try {
     const { title, original_content, suggestion_type, brand_profile_id } = req.body;
     if (!title || !original_content) {
@@ -81,31 +83,31 @@ router.post('/', auth, aiRateLimiter, async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, nativeInputGuard(inputFields), async (req, res) => {
   try {
-    const { title, original_content, suggestion_type, status } = req.body;
+    const { title, original_content, suggestion_type, brand_profile_id } = req.body;
     const result = await pool.query(
-      `UPDATE ai_suggestions SET title=$1, original_content=$2, suggestion_type=$3, status=$4, updated_at=NOW() WHERE id=$5 RETURNING *`,
-      [title, original_content, suggestion_type, status, req.params.id]
+      `UPDATE ai_suggestions SET title=$1, original_content=$2, suggestion_type=$3, brand_profile_id=$4, updated_at=NOW() WHERE id=$5 RETURNING *`,
+      [title, original_content, suggestion_type, brand_profile_id || null, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, freshRecordActor, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM ai_suggestions WHERE id = $1 RETURNING *', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 

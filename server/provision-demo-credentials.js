@@ -1,18 +1,7 @@
-const bcrypt = require('bcryptjs');
-const pool = require('./db');
-
-async function main() {
-  const email = String(process.env.DEMO_EMAIL || process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  const password = String(process.env.DEMO_PASSWORD || process.env.ADMIN_PASSWORD || '');
-  const tenantId = String(process.env.GOVERNANCE_TENANT_ID || process.env.TENANT_ID || `user:${email}`);
-  if (!email || password.length < 12) throw new Error('Local demo credentials are incomplete');
-  const hash = await bcrypt.hash(password, 10);
-  await pool.query(
-    `INSERT INTO users(name,email,password_hash,role,tenant_id) VALUES($1,$2,$3,'admin',$4)
-     ON CONFLICT(email) DO UPDATE SET name=EXCLUDED.name,password_hash=EXCLUDED.password_hash,role='admin',tenant_id=EXCLUDED.tenant_id`,
-    ['Runtime Administrator', email, hash, tenantId],
-  );
-  await pool.end();
-  console.log('Provisioned local demo administrator.');
-}
-main().catch((error) => { console.error(error.message); process.exit(1); });
+'use strict';
+const bcrypt=require('bcryptjs');
+const {resolveDemoCredentials}=require('./demoCredentials');
+async function provisionDemoCredentials({pool,env=process.env}){const {email,password}=resolveDemoCredentials(env);const client=await pool.connect();try{await client.query('BEGIN');const prior=(await client.query('SELECT * FROM users WHERE email=$1 FOR UPDATE',[email])).rows[0];if(prior){if(!await bcrypt.compare(password,prior.password_hash))throw Error('Configured demo credentials do not match the existing account. Its password, role and tenant were preserved; configure the matching pair.');await client.query('COMMIT');return{created:false,status:'existing-account-preserved',id:prior.id};}
+ if(env.NODE_ENV==='production'||env.ENABLE_DEMO_CREDENTIAL_AUTOFILL==='false')throw Error('Local demo provisioning is disabled. No account was created.');const hash=await bcrypt.hash(password,10),tenant=String(env.GOVERNANCE_TENANT_ID||env.TENANT_ID||'user:'+email);const actor=(await client.query("INSERT INTO users(name,email,password_hash,role,tenant_id) VALUES($1,$2,$3,'admin',$4) RETURNING id",['Runtime Administrator',email,hash,tenant])).rows[0];await client.query('COMMIT');return{created:true,status:'configured-native-development-account-created',id:actor.id};}catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}}
+module.exports={provisionDemoCredentials};
+if(require.main===module){const pool=require('./db');provisionDemoCredentials({pool}).then(result=>console.log(result.created?'Provisioned the configured local development account.':'Existing local demo account verified; password, role, tenant and data preserved.')).catch(error=>{console.error(error.message);process.exitCode=1;}).finally(()=>pool.end());}

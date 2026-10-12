@@ -22,7 +22,7 @@
 const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
-const { callOpenRouter } = require('../lib/aiHelpers');
+const { callOpenRouter, saveAIResult, parseAIJson } = require('../lib/aiHelpers');
 
 const router = express.Router();
 
@@ -80,7 +80,7 @@ router.post('/notifications/send', auth, async (req, res) => {
     );
     return res.status(202).json({ queued: true, notification: ins.rows[0] });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -92,7 +92,7 @@ router.get('/notifications', auth, async (req, res) => {
       [req.user?.id || null]
     );
     res.json(r.rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // --- 2. WEBHOOK DELIVERIES (TOO-RISKY: in-memory queue) ---------------------
@@ -134,7 +134,7 @@ router.post('/webhook-deliveries/enqueue', auth, async (req, res) => {
       row = ins.rows[0];
     } catch (_) { /* table missing */ }
     return res.status(202).json({ enqueued: true, in_memory_depth: inMemDeliveryQueue.length, delivery: row });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 router.get('/webhook-deliveries', auth, async (req, res) => {
@@ -148,7 +148,7 @@ router.get('/webhook-deliveries', auth, async (req, res) => {
       rows = r.rows;
     } catch (_) {}
     res.json({ in_memory_depth: inMemDeliveryQueue.length, deliveries: rows });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // --- 3. AGENT ORCHESTRATION (NEEDS-PRODUCT-DECISION) ------------------------
@@ -166,30 +166,31 @@ router.post('/agents/run-pipeline', auth, async (req, res) => {
       'You are a brand voice consistency checker. Score 0-100 and list deviations as JSON.',
       `Brand voice: ${brand_voice}\nContent: ${content}\nReturn {"score": int, "deviations": [string]}.`,
       { temperature: 0.2, max_tokens: 600 }
-    ).catch(e => ({ error: e.message }));
+    );
     const errA = aiErrorOrPass(res, stageA); if (errA) return errA;
 
     const stageB = await callOpenRouter(
       'You are a tone classifier. Identify primary tone and confidence. JSON only.',
       `Content: ${content}\nReturn {"tone": string, "confidence": 0..1, "secondary_tones": [string]}.`,
       { temperature: 0.2, max_tokens: 400 }
-    ).catch(e => ({ error: e.message }));
+    );
     if (stageB && stageB.error) return res.status(502).json({ error: stageB.error, stage: 'tone' });
 
     const stageC = await callOpenRouter(
       'You are an approval-workflow recommender. Recommend approve/revise/reject with reasons. JSON only.',
       `Voice check: ${typeof stageA === 'string' ? stageA : JSON.stringify(stageA)}\nTone: ${typeof stageB === 'string' ? stageB : JSON.stringify(stageB)}\nReturn {"decision": "approve|revise|reject", "reasons": [string], "fixes": [string]}.`,
       { temperature: 0.2, max_tokens: 500 }
-    ).catch(e => ({ error: e.message }));
+    );
     if (stageC && stageC.error) return res.status(502).json({ error: stageC.error, stage: 'approval' });
 
+    await saveAIResult(pool,{user_id:req.user.id,feature:'native-pipeline',input:req.body,raw_text:JSON.stringify({voice_check:stageA,tone:stageB,approval:stageC}),output:{voice_check:parseAIJson(stageA)||stageA,tone:parseAIJson(stageB)||stageB,approval:parseAIJson(stageC)||stageC}});
     return res.json({
       pipeline: 'linear:voice->tone->approval',
       stages: { voice_check: stageA, tone: stageB, approval: stageC },
       note: 'PRODUCT-DECISION: linear pipeline; multi-agent topology deferred.',
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -241,7 +242,7 @@ router.post('/rag/ingest', auth, async (req, res) => {
       [req.user?.id || null, title || null, body, JSON.stringify(meta || {})]
     );
     res.status(201).json(r.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 router.post('/rag/query', auth, async (req, res) => {
@@ -258,7 +259,7 @@ router.post('/rag/query', auth, async (req, res) => {
       score: cosine(qv, pseudoEmbed(`${row.title || ''} ${row.body}`)),
     })).sort((a, b) => b.score - a.score).slice(0, Math.max(1, Math.min(20, parseInt(k, 10) || 3)));
     res.json({ matches: scored, embedding_strategy: 'in-memory pseudo (hashed bag-of-words, 64d)' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // --- 5. WHITELABEL CONFIG (NEEDS-PRODUCT-DECISION) --------------------------
@@ -285,7 +286,7 @@ router.get('/whitelabel', auth, async (req, res) => {
   try {
     const r = await pool.query(`SELECT * FROM whitelabel_config WHERE id = 1`);
     res.json(r.rows[0] || { id: 1, product_name: 'AI Brand Voice Consistency Checker' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 router.put('/whitelabel', auth, async (req, res) => {
@@ -305,7 +306,7 @@ router.put('/whitelabel', auth, async (req, res) => {
     );
     const r = await pool.query(`SELECT * FROM whitelabel_config WHERE id = 1`);
     res.json(r.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 module.exports = router;

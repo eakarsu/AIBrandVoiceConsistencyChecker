@@ -1,32 +1,41 @@
+import { useRef as useDemoLoginRef, useState as useDemoLoginState } from 'react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
+  const demoLoginLock = useDemoLoginRef(false);
+  const [demoLoginBusy, setDemoLoginBusy] = useDemoLoginState(false);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const loginLock=useDemoLoginRef(false);
+  const demoAvailable=import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_CREDENTIAL_AUTOFILL==='true' && Boolean(import.meta.env.VITE_DEMO_EMAIL&&import.meta.env.VITE_DEMO_PASSWORD);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, demoLoginCredentials) => {
     e.preventDefault();
+    if(loginLock.current)return;loginLock.current=true;
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login((demoLoginCredentials?.email ?? email), (demoLoginCredentials?.password ?? password));
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
-      setLoading(false);
+      loginLock.current=false;setLoading(false);
     }
   };
 
   const populateCredentials = () => {
+    if(!demoAvailable){setError('Demo credentials are unavailable. Configure the local development pair or use Sign In.');return;}
+    setError('');
     setEmail(import.meta.env.VITE_DEMO_EMAIL || '');
     setPassword(import.meta.env.VITE_DEMO_PASSWORD || '');
   };
@@ -44,7 +53,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {error && <div style={styles.error}>{error}</div>}
+          {error && <div role="alert" style={styles.error}>{error}</div>}
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>Email</label>
@@ -79,15 +88,29 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <button type="button" onClick={populateCredentials} style={styles.demoBtn}>
-            Auto Fill Demo Credentials
+          <button disabled={demoLoginBusy||loading} type="button" onClick={async (event) => {
+ if (demoLoginLock.current) return;
+ demoLoginLock.current = true; setDemoLoginBusy(true);
+ const values = {};
+ const captureDemoValue = (key, value) => { values[key] = value; return value; };
+ try {
+  if(!demoAvailable){setError('Demo credentials are unavailable. Configure the local development pair or use Sign In.');return;}
+  await (async () => {
+    setEmail(captureDemoValue("email", import.meta.env.VITE_DEMO_EMAIL || ''));
+    setPassword(captureDemoValue("password", import.meta.env.VITE_DEMO_PASSWORD || ''));
+  })(event);
+  if (values.error || typeof values.email !== 'string' || !values.email || typeof values.password !== 'string' || !values.password) { setError(typeof values.error === 'string' ? values.error : 'Demo credentials are unavailable.'); return; }
+  await handleSubmit(event, { email: values.email, password: values.password });
+ } finally { demoLoginLock.current = false; setDemoLoginBusy(false); }
+}} style={styles.demoBtn}>
+            Log In as Demo
           </button>
+<button type="button" disabled={loading||demoLoginBusy} onClick={populateCredentials} style={styles.demoBtn}>Fill credentials</button>
+          <p style={styles.footerText}>Fill credentials does not sign in. Log In as Demo signs in once with the configured local development account.</p>
         </form>
 
         <div style={styles.footer}>
-          <p style={styles.footerText}>Demo accounts:</p>
-          <p style={styles.footerCreds}>admin@brandvoice.com / password123</p>
-          <p style={styles.footerCreds}>manager@brandvoice.com / password123</p>
+          <p style={styles.footerText}>Use the existing configured local demo account or your own native sign-in credentials. No default password is displayed or assumed.</p>
         </div>
       </div>
     </div>

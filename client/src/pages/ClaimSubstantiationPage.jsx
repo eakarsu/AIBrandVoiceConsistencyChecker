@@ -1,19 +1,5 @@
-import React, { useState } from 'react';
-
-export default function ClaimSubstantiationPage() {
-  const [payload, setPayload] = useState(JSON.stringify({ copy: 'The fastest, most trusted platform for every enterprise team.', evidence: ['customer survey trust score'] }, null, 2));
-  const [result, setResult] = useState(null);
-  const run = async () => {
-    const res = await fetch('/api/claim-substantiation/check', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` }, body: JSON.stringify(JSON.parse(payload)) });
-    setResult(await res.json());
-  };
-  return (
-    <div>
-      <h1>Claim Substantiation</h1>
-      <p style={{ color: '#94a3b8' }}>Check brand claims against available evidence before approval.</p>
-      <textarea style={{ width: '100%', minHeight: 220 }} value={payload} onChange={(event) => setPayload(event.target.value)} />
-      <button onClick={run}>Check Claims</button>
-      {result && <section style={{ marginTop: 20 }}><h2>{result.status}</h2><p>{result.action}</p><p>Uncovered: {result.uncovered.join(', ') || 'none'}</p></section>}
-    </div>
-  );
+import React,{useEffect,useRef,useState} from 'react';
+const examples=[{label:'Draft superlative',copy:'Fictional exercise: The fastest notebook for every planning task.',evidence:[]},{label:'Draft quantified claim',copy:'Fictional exercise: Plan 20% faster with this notebook.',evidence:[]},{label:'Neutral draft',copy:'Fictional exercise: A notebook with space for weekly priorities.',evidence:[]}];
+export default function ClaimSubstantiationPage(){const [copy,setCopy]=useState(''),[evidence,setEvidence]=useState(''),[result,setResult]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),operation=useRef(null);useEffect(()=>()=>operation.current?.abort(),[]);const cancel=()=>{operation.current?.abort();operation.current=null;setBusy(false);};async function run(event){event.preventDefault();if(busy)return;const controller=new AbortController();operation.current=controller;setBusy(true);setError('');setResult(null);try{const response=await fetch('/api/claim-substantiation/check',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+(localStorage.getItem('token')||'')},body:JSON.stringify({copy,evidence:evidence.split('\n').map(value=>value.trim()).filter(Boolean)})});const data=await response.json();if(!response.ok)throw Error(data.error||'The local check could not run.');if(!Array.isArray(data.claims)||!Array.isArray(data.uncovered))throw Error('The local check response was malformed. Retry.');if(!controller.signal.aborted&&operation.current===controller)setResult(data);}catch(failure){if(!controller.signal.aborted&&operation.current===controller)setError(failure.message);}finally{if(operation.current===controller){operation.current=null;setBusy(false);}}}
+ return <section style={{color:'#e2e8f0'}}><h1>Local Claim Screening</h1><p>This fixed keyword check identifies wording for human review. It does not verify source evidence, establish legal substantiation, call OpenRouter or grant publishing approval.</p><form onSubmit={run}><div style={{display:'flex',gap:10,flexWrap:'wrap'}}>{examples.map(sample=><button key={sample.label} type="button" disabled={busy} onClick={()=>{setCopy(sample.copy);setResult(null);setError('');}}>Fill draft · {sample.label}</button>)}</div><label>Draft wording<textarea name="copy" required value={copy} onChange={event=>setCopy(event.target.value)} style={{display:'block',width:'100%',minHeight:140}}/></label><label>Manually supplied evidence descriptions (optional; one per line)<textarea name="evidence" value={evidence} onChange={event=>setEvidence(event.target.value)} style={{display:'block',width:'100%',minHeight:100}}/></label><p>The examples deliberately supply no source evidence. Enter genuine evidence descriptions manually; their wording is not proof.</p><button type="submit" disabled={busy}>{busy?'Checking locally…':'Run local keyword check'}</button>{busy&&<button type="button" onClick={cancel}>Cancel local check</button>}</form>{error&&<p role="alert">{error} <button onClick={()=>setError('')}>Dismiss error</button></p>}{result&&<section aria-label="Local screening result"><h2>Human review required</h2><p>Detected wording: {result.claims.join(', ')||'No configured keyword pattern found'}</p><p>Patterns without matching evidence wording: {result.uncovered.join(', ')||'None in this keyword check'}</p><p>Source validity and publishing authority were not verified. Use the existing human publishing workflow for actual approval.</p></section>}</section>;
 }

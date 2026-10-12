@@ -1,3 +1,4 @@
+import AIReportLibrary from "./components/AIReportLibrary";
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -21,7 +22,7 @@ function ProtectedRoute({ children }) {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <><AIReportLibrary floating /><Routes>
         <Route path="/insights/timeline" element={<ProtectedRoute><Layout><TimelineView /></Layout></ProtectedRoute>} />
         <Route path="/codex/custom-viz" element={<ProtectedRoute><Layout><CodexCustomVizFeature /></Layout></ProtectedRoute>} />
         <Route path="/codex/operations" element={<ProtectedRoute><Layout><CodexOperationsFeature /></Layout></ProtectedRoute>} />
@@ -33,7 +34,7 @@ function AppRoutes() {
       <Route path="/webhooks" element={<ProtectedRoute><Layout><Webhooks /></Layout></ProtectedRoute>} />
       <Route path="/claim-substantiation" element={<ProtectedRoute><Layout><ClaimSubstantiationPage /></Layout></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    </Routes></>
   );
 }
 

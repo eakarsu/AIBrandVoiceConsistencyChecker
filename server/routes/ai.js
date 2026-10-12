@@ -56,11 +56,12 @@ router.post('/analyze-batch', auth, aiRateLimit, async (req, res) => {
       const aiResponse = await callOpenRouter(
         `You are a brand voice consistency analyzer. Analyze the content and return ONLY valid JSON (no markdown fences):
         {"consistency_score": 0-100, "tone_match": 0-100, "violations": ["violation1"] or [], "summary": "one sentence"}`,
-        `Analyze content for brand voice consistency:\nTitle: ${item.title}\nContent: ${(item.content || '').substring(0, 500)}`
+        `Analyze content for brand voice consistency:\nTitle: ${item.title}\nContent: ${(item.content || '')}`
       );
 
       const parsed = parseAIJson(aiResponse) || {};
-      const score = typeof parsed.consistency_score === 'number' ? parsed.consistency_score : 75;
+      if(typeof parsed.consistency_score!=='number'||!Number.isFinite(parsed.consistency_score))throw Object.assign(new Error('The provider did not return a valid batch consistency score. No score was invented.'),{status:502});
+      const score=parsed.consistency_score;
       totalScore += score;
 
       results.push({
@@ -84,7 +85,7 @@ router.post('/analyze-batch', auth, aiRateLimit, async (req, res) => {
       results,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -96,8 +97,8 @@ router.post('/monitor-competitor', auth, aiRateLimit, async (req, res) => {
       return res.status(400).json({ error: 'sample_content is required' });
     }
 
-    // Fetch the user's brand profile for comparison
-    const profileResult = await pool.query('SELECT * FROM brand_profiles ORDER BY created_at DESC LIMIT 1');
+    // Choose an actual shared accessible profile for the supplied-text comparison
+    const profileResult=req.body.brand_profile_id?await pool.query('SELECT * FROM brand_profiles WHERE id=$1',[req.body.brand_profile_id]):await pool.query('SELECT * FROM brand_profiles ORDER BY created_at DESC LIMIT 1');
     const userBrand = profileResult.rows[0];
 
     const aiResponse = await callOpenRouter(
@@ -130,7 +131,7 @@ ${sample_content}`
       `INSERT INTO competitor_analyses (competitor_name, industry, sample_content, brand_profile_id, ai_analysis, status)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [competitor_url || 'Unknown Competitor', 'Unknown', sample_content, userBrand?.id || null, aiResponse, 'completed']
-    ).catch(() => {}); // Non-fatal if table doesn't exist
+    );
 
     await logAI(req, 'monitor-competitor', { competitor_url, user_brand_id: userBrand?.id }, aiResponse, parsed);
 
@@ -141,7 +142,7 @@ ${sample_content}`
       raw: aiResponse,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -157,12 +158,12 @@ router.post('/voice-drift', auth, aiRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'baseline_samples and recent_samples (arrays) are required' });
     }
     const systemPrompt = `You are a brand voice drift analyst. Compare the baseline corpus against the recent corpus and flag drift in tone, vocabulary, formality. Return strict JSON: {"drift_score": 0-100, "tone_delta": "string", "vocab_delta": "string", "formality_delta": "string", "flagged": true|false, "examples": ["string"], "recommendations": ["string"]}.`;
-    const userPrompt = `Brand profile id: ${brand_profile_id || 'n/a'}. Window: ${window_days || 30} days.\n\nBASELINE:\n${baseline_samples.join('\n---\n')}\n\nRECENT:\n${recent_samples.join('\n---\n')}`;
+    const userPrompt = `Brand profile id: ${brand_profile_id || 'n/a'}. Window: ${window_days ?? 30} days.\n\nBASELINE:\n${baseline_samples.join('\n---\n')}\n\nRECENT:\n${recent_samples.join('\n---\n')}`;
     const raw = await callOpenRouter(systemPrompt, userPrompt);
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'voice-drift', { brand_profile_id, window_days }, raw, parsed);
     res.json({ result: parsed, raw, type: 'voice-drift' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 2) POST /api/ai/audience-persona - Audience Persona Analyzer
@@ -176,7 +177,7 @@ router.post('/audience-persona', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'audience-persona', { brand_profile_id, channel }, raw, parsed);
     res.json({ result: parsed, raw, type: 'audience-persona' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 3) POST /api/ai/competitor-benchmark - Cross-Brand Competitive Benchmarking
@@ -192,7 +193,7 @@ router.post('/competitor-benchmark', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'competitor-benchmark', { competitor_names: competitors.map(c => c.name) }, raw, parsed);
     res.json({ result: parsed, raw, type: 'competitor-benchmark' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 4) POST /api/ai/variation-generator - Content Variation Generator (5 tones)
@@ -207,7 +208,7 @@ router.post('/variation-generator', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'variation-generator', { tones: wantedTones }, raw, parsed);
     res.json({ result: parsed, raw, type: 'variation-generator' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 5) POST /api/ai/vocab-compliance - Vocabulary Compliance Checker
@@ -215,22 +216,16 @@ router.post('/vocab-compliance', auth, aiRateLimiter, async (req, res) => {
   try {
     const { content, brand_profile_id } = req.body;
     if (!content) return res.status(400).json({ error: 'content is required' });
-    let approved = [], banned = [], restricted = [];
-    try {
-      const r = await pool.query('SELECT term, status FROM vocabulary WHERE brand_profile_id = $1 OR $1 IS NULL', [brand_profile_id || null]);
-      r.rows.forEach(row => {
-        if (row.status === 'approved') approved.push(row.term);
-        else if (row.status === 'banned') banned.push(row.term);
-        else if (row.status === 'restricted') restricted.push(row.term);
-      });
-    } catch (_) { /* table may not exist */ }
+    const approved=[],banned=[],restricted=[];
+    const vocabulary=await pool.query('SELECT term,status FROM vocabulary_terms WHERE brand_profile_id=$1 OR $1 IS NULL',[brand_profile_id??null]);
+    vocabulary.rows.forEach(row=>{if(row.status==='approved')approved.push(row.term);else if(row.status==='banned')banned.push(row.term);else if(row.status==='restricted')restricted.push(row.term);});
     const systemPrompt = `You are a vocabulary compliance checker. Flag any banned or restricted terms in content; suggest approved-list alternatives. Return JSON: {"compliance_score": 0-100, "violations": [{"term": "...", "severity": "low|medium|high", "context": "...", "suggestion": "..."}], "approved_terms_used": [...], "missing_approved_terms": [...], "verdict": "PASS|REVIEW|FAIL"}`;
     const userPrompt = `Approved: ${approved.join(', ') || 'none'}\nBanned: ${banned.join(', ') || 'none'}\nRestricted: ${restricted.join(', ') || 'none'}\n\nCONTENT:\n${content}`;
     const raw = await callOpenRouter(systemPrompt, userPrompt);
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'vocab-compliance', { brand_profile_id }, raw, parsed);
     res.json({ result: parsed, raw, type: 'vocab-compliance' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 6) POST /api/ai/channel-tone - Channel-Specific Tone Recommender
@@ -245,7 +240,7 @@ router.post('/channel-tone', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'channel-tone', { channels: wanted }, raw, parsed);
     res.json({ result: parsed, raw, type: 'channel-tone' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 7) POST /api/ai/heritage-consistency - Brand Heritage Consistency Tracker
@@ -261,7 +256,7 @@ router.post('/heritage-consistency', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'heritage-consistency', { brand_profile_id }, raw, parsed);
     res.json({ result: parsed, raw, type: 'heritage-consistency' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 8) POST /api/ai/approval-workflow - Multi-Team Collaboration Workflow (consistency + routing)
@@ -273,8 +268,8 @@ router.post('/approval-workflow', auth, aiRateLimiter, async (req, res) => {
     const userPrompt = `Submitter role: ${submitter_role || 'contributor'}. Channel: ${channel || 'general'}.\n\nCONTENT:\n${content}`;
     const raw = await callOpenRouter(systemPrompt, userPrompt);
     const parsed = parseAIJson(raw) || { raw };
-    // Persist a workflow record (best-effort)
-    try {
+    // Retain a model routing proposal. Only the governed human route can approve publication.
+    {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS approval_workflows (
           id SERIAL PRIMARY KEY,
@@ -290,12 +285,12 @@ router.post('/approval-workflow', auth, aiRateLimiter, async (req, res) => {
       await pool.query(
         `INSERT INTO approval_workflows (submitter_id, brand_profile_id, channel, content, ai_verdict, status)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [req.user?.id || null, brand_profile_id || null, channel || null, content, JSON.stringify(parsed), parsed?.auto_approve ? 'approved' : 'pending_review']
+        [req.user?.id || null, brand_profile_id || null, channel || null, content, JSON.stringify(parsed), 'pending_review']
       );
-    } catch (_) { /* non-fatal */ }
+    }
     await logAI(req, 'approval-workflow', { brand_profile_id, submitter_role, channel }, raw, parsed);
-    res.json({ result: parsed, raw, type: 'approval-workflow' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    res.json({ result: parsed, raw, type: 'approval-workflow',status:'pending_review',human_approval_required:true,note:'This is a model routing suggestion. It does not approve or publish content.' });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 9) POST /api/ai/readability-score - Readability & Grade Level Analyzer
@@ -323,7 +318,7 @@ router.post('/readability-score', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'readability-score', { brand_profile_id, word_count: content.split(/\s+/).length }, raw, parsed);
     res.json({ result: parsed, raw, type: 'readability-score' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // 10) POST /api/ai/tone-rewriter - One-Click Tone Rewriter
@@ -345,12 +340,14 @@ router.post('/tone-rewriter', auth, aiRateLimiter, async (req, res) => {
     const parsed = parseAIJson(raw) || { raw };
     await logAI(req, 'tone-rewriter', { desired_tone, brand_profile_id }, raw, parsed);
     res.json({ result: parsed, raw, type: 'tone-rewriter' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
 
 // GET /api/ai/results — paginated AI history (per user)
 router.get('/results', auth, async (req, res) => {
   try {
+    await require('../lib/aiExecution').freshActor({req,res,controller:new AbortController()},pool);
+    await require('../lib/aiHelpers').ensureAIResultsTable(pool);
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
@@ -368,8 +365,11 @@ router.get('/results', auth, async (req, res) => {
     );
     res.json({ data: r.rows, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
+
+router.get('/results/:id',auth,async(req,res)=>{try{await require('../lib/aiExecution').freshActor({req,res,controller:new AbortController()},pool);
+    await require('../lib/aiHelpers').ensureAIResultsTable(pool);const id=Number(req.params.id);if(!Number.isSafeInteger(id)||id<=0)return res.status(400).json({error:'Invalid result id'});const result=await pool.query('SELECT id,feature,input,output,raw_text,model,created_at FROM ai_results WHERE id=$1 AND user_id=$2',[id,req.user.id]);if(!result.rows.length)return res.status(404).json({error:'Saved result not found'});res.json(result.rows[0]);}catch(error){res.status(error.status||500).json({error:error.message});}});
 
 module.exports = router;
